@@ -1,5 +1,4 @@
-# qrcodex
-# QR Code Web App
+# QRcodex
 
 A simple web app to **generate** and **scan QR codes** using JavaScript.
 
