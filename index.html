@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QR Code Generator & Scanner</title>
+  <title>QR CodeX Cyberpunk</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
@@ -181,7 +181,7 @@
       const qrEl = document.getElementById('qrcode').querySelector('img');
       const link = document.createElement('a');
       link.href = qrEl.src;
-      link.download = 'qrcode.png';
+      link.download = 'qrcode.img';
       link.click();
     }
 
