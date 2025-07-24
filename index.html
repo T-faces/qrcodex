@@ -1,57 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>QR Codex Generator & Scanner</title>
-  <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator & Scanner</title>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --fg: #00ffea;
+      --accent: #ff00ff;
+      --border: #00ffc3;
+    }
+    [data-theme='light'] {
+      --bg: #ffffff;
+      --fg: #000000;
+      --accent: #007bff;
+      --border: #007bff;
+    }
+    body {
+      margin: 0;
+      font-family: 'Share Tech Mono', monospace;
+      background-color: var(--bg);
+      color: var(--fg);
+      background-image: radial-gradient(circle at 20% 30%, #1a1a2e, #0f0f1a);
+    }
+    header {
+      padding: 1rem;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 0 10px var(--accent);
+    }
+    nav a {
+      margin: 0 10px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      text-shadow: 0 0 5px var(--border);
+    }
+    .container {
+      padding: 2rem;
+      text-align: center;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      background-color: transparent;
+      color: var(--fg);
+      font-family: inherit;
+      box-shadow: 0 0 10px var(--border);
+    }
+    input::placeholder {
+      color: var(--fg);
+      opacity: 0.6;
+    }
+    button:hover {
+      background-color: var(--border);
+      color: #000;
+      cursor: pointer;
+    }
+    #qrcode {
+      margin-top: 20px;
+      position: relative;
+      display: inline-block;
+      padding: 1rem;
+      border: 2px dashed var(--border);
+      box-shadow: 0 0 20px var(--border);
+    }
+    #logo-preview {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 60px;
+      max-height: 60px;
+      pointer-events: none;
+    }
+    #reader {
+      margin-top: 20px;
+      border: 2px solid var(--border);
+      box-shadow: 0 0 15px var(--border);
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <h1>QR Codex Generator & Scanner</h1>
+  <header>
+    <div>
+      <nav>
+        <a href="#" onclick="showPage('generator')">Generate</a>
+        <a href="#" onclick="showPage('scanner')">Scan</a>
+      </nav>
+    </div>
+    <button onclick="toggleTheme()">Toggle Theme</button>
+  </header>
 
-  <!-- Generator -->
-  <div class="section">
+  <div id="generator" class="container">
     <h2>Generate QR Code</h2>
-    <input type="text" id="qr-input" placeholder="Enter text or URL">
+    <input type="text" id="qr-input" placeholder="Enter text or URL" />
+    <input type="file" id="logo-input" accept="image/*" />
+    <br />
     <button onclick="generateQRCode()">Generate</button>
-    <div id="qrcode"></div>
+    <button onclick="downloadQRCode()">Download</button>
+    <div id="qrcode-wrapper">
+      <div id="qrcode">
+        <img id="logo-preview" class="hidden" />
+      </div>
+    </div>
   </div>
 
-  <!-- Scanner -->
-  <div class="section">
+  <div id="scanner" class="container hidden">
     <h2>Scan QR Code</h2>
-    <div id="reader" style="width:300px;"></div>
+    <div id="reader" style="width: 300px;"></div>
     <p>Result: <span id="qr-result"></span></p>
   </div>
 
   <script>
+    let theme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+
+    function toggleTheme() {
+      theme = theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+      localStorage.setItem('theme', theme);
+    }
+
+    function showPage(page) {
+      document.getElementById('generator').classList.add('hidden');
+      document.getElementById('scanner').classList.add('hidden');
+      document.getElementById(page).classList.remove('hidden');
+      if (page === 'scanner') startScanner();
+    }
+
+    let logoData = null;
+
+    document.getElementById('logo-input').addEventListener('change', function (e) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (event) {
+        logoData = event.target.result;
+        const logoImg = document.getElementById('logo-preview');
+        logoImg.src = logoData;
+        logoImg.classList.remove('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+
     function generateQRCode() {
-      const input = document.getElementById("qr-input").value;
-      const qrCodeDiv = document.getElementById("qrcode");
-      qrCodeDiv.innerHTML = ""; // reset
+      const input = document.getElementById('qr-input').value;
+      const qrCodeDiv = document.getElementById('qrcode');
+      qrCodeDiv.innerHTML = '<img id="logo-preview" class="hidden" />';
+
       new QRCode(qrCodeDiv, {
         text: input,
         width: 256,
-        height: 256
+        height: 256,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      if (logoData) {
+        const qrImg = qrCodeDiv.querySelector('img');
+        qrImg.onload = () => {
+          const logo = document.getElementById('logo-preview');
+          logo.src = logoData;
+          logo.classList.remove('hidden');
+        };
+      }
+    }
+
+    function downloadQRCode() {
+      const qrEl = document.getElementById('qrcode').querySelector('img');
+      const link = document.createElement('a');
+      link.href = qrEl.src;
+      link.download = 'qrcode.png';
+      link.click();
+    }
+
+    function startScanner() {
+      const resultElement = document.getElementById('qr-result');
+      const html5QrCode = new Html5Qrcode("reader");
+      const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+      html5QrCode.start(
+        { facingMode: "environment" },
+        config,
+        (decodedText) => {
+          resultElement.innerText = decodedText;
+          html5QrCode.stop();
+        },
+        (errorMessage) => {}
+      ).catch((err) => {
+        console.error("Camera start error:", err);
       });
     }
 
-    const qrResult = document.getElementById('qr-result');
-    const html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-
-    html5QrCode.start(
-      { facingMode: "environment" },
-      config,
-      (decodedText) => {
-        qrResult.innerText = decodedText;
-        html5QrCode.stop(); // stop after success
-      },
-      (errorMessage) => {}
-    ).catch((err) => {
-      console.error("Camera start error:", err);
-    });
+    // default page
+    showPage('generator');
   </script>
 </body>
 </html>
